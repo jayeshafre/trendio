@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from .models import CustomUser
-
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import smart_str
+from django.utils.http import urlsafe_base64_decode
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
@@ -68,4 +70,41 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs['new_password'] != attrs['new_password2']:
             raise serializers.ValidationError({"new_password": "New passwords do not match."})
+        return attrs
+    
+class ForgotPasswordSerializer(serializers.Serializer):
+    """
+    Serializer for forgot password request.
+    Takes email and sends reset link.
+    """
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        # Check if user with this email exists
+        if not CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "No account found with this email address."
+            )
+        return value
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    """
+    Serializer for resetting password using token.
+    """
+    new_password  = serializers.CharField(
+        required=True,
+        write_only=True,
+        validators=[validate_password]
+    )
+    new_password2 = serializers.CharField(
+        required=True,
+        write_only=True
+    )
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password2']:
+            raise serializers.ValidationError(
+                {"new_password": "Passwords do not match."}
+            )
         return attrs

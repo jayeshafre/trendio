@@ -31,3 +31,24 @@ export const changePassword = async (passwordData) => {
     const response = await axiosInstance.post('/auth/change-password/', passwordData);
     return response.data;
 };
+
+// ─── Forgot Password ──────────────────────────────────────────
+export const forgotPassword = async (email) => {
+    const response = await axiosInstance.post('/auth/forgot-password/', { email });
+    return response.data;
+};
+
+// ─── Validate Reset Token ─────────────────────────────────────
+export const validateResetToken = async (uid, token) => {
+    const response = await axiosInstance.get(`/auth/reset-password/${uid}/${token}/validate/`);
+    return response.data;
+};
+
+// ─── Reset Password ───────────────────────────────────────────
+export const resetPassword = async (uid, token, passwords) => {
+    const response = await axiosInstance.post(
+        `/auth/reset-password/${uid}/${token}/`,
+        passwords
+    );
+    return response.data;
+};

@@ -60,7 +60,35 @@ const LoginPage = () => {
                     )}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <Input label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="john@example.com" error={errors.email} required />
-                        <Input label="Password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Enter your password" error={errors.password} required />
+                        {/* Password field with forgot password link */}
+<div>
+    <div className="flex justify-between items-center mb-1">
+        <label className="text-sm font-medium text-gray-700">
+            Password <span className="text-red-500">*</span>
+        </label>
+        <Link
+            to="/forgot-password"
+            className="text-xs text-pink-500 hover:underline font-medium"
+        >
+            Forgot password?
+        </Link>
+    </div>
+    <input
+        type="password"
+        name="password"
+        value={formData.password}
+        onChange={handleChange}
+        placeholder="Enter your password"
+        className={`w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all duration-200 ${
+            errors.password
+                ? 'border-red-400 bg-red-50'
+                : 'border-gray-300 bg-white focus:border-pink-500'
+        }`}
+    />
+    {errors.password && (
+        <p className="text-xs text-red-500 mt-1">⚠ {errors.password}</p>
+    )}
+</div>
                         <Button type="submit" loading={loading} fullWidth>Login</Button>
                     </form>
                     <p className="text-center text-sm text-gray-500 mt-6">

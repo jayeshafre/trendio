@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated, loading } = useAuth();
@@ -35,6 +37,12 @@ const AppLayout = () => (
             <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/forgot-password" element={
+            <GuestRoute><ForgotPasswordPage /></GuestRoute>
+            } />
+            <Route path="/reset-password/:uid/:token" element={
+            <GuestRoute><ResetPasswordPage /></GuestRoute>
+            } />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     </>
