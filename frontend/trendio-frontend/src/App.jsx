@@ -8,12 +8,14 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ProductsPage from './pages/ProductsPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated, loading } = useAuth();
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent"/>
         </div>
     );
     return isAuthenticated ? children : <Navigate to="/login" replace />;
@@ -23,7 +25,7 @@ const GuestRoute = ({ children }) => {
     const { isAuthenticated, loading } = useAuth();
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent"/>
         </div>
     );
     return !isAuthenticated ? children : <Navigate to="/" replace />;
@@ -33,17 +35,22 @@ const AppLayout = () => (
     <>
         <Navbar />
         <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-            <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/forgot-password" element={
-            <GuestRoute><ForgotPasswordPage /></GuestRoute>
-            } />
-            <Route path="/reset-password/:uid/:token" element={
-            <GuestRoute><ResetPasswordPage /></GuestRoute>
-            } />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Public */}
+            <Route path="/"                              element={<HomePage />} />
+            <Route path="/products"                      element={<ProductsPage />} />
+            <Route path="/products/:id"                  element={<ProductDetailPage />} />
+
+            {/* Guest Only */}
+            <Route path="/login"                         element={<GuestRoute><LoginPage /></GuestRoute>} />
+            <Route path="/register"                      element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/forgot-password"               element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+            <Route path="/reset-password/:uid/:token"    element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+
+            {/* Protected */}
+            <Route path="/profile"                       element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+            {/* Fallback */}
+            <Route path="*"                              element={<Navigate to="/" replace />} />
         </Routes>
     </>
 );

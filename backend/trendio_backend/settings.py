@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 
      # Our apps
     'users', 
+    'products',
 ]
 
 MIDDLEWARE = [
@@ -156,3 +157,8 @@ DEFAULT_FROM_EMAIL  = 'Trendio <noreply@trendio.com>'
 
 # Frontend URL (for reset password link)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+# ─── Media Files (Product Images) ────────────────────────────
+import os
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
