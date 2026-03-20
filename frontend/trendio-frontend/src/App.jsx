@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import Navbar from './components/common/Navbar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -10,6 +11,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import CartPage from './pages/CartPage';
 
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated, loading } = useAuth();
@@ -36,21 +38,22 @@ const AppLayout = () => (
         <Navbar />
         <Routes>
             {/* Public */}
-            <Route path="/"                              element={<HomePage />} />
-            <Route path="/products"                      element={<ProductsPage />} />
-            <Route path="/products/:id"                  element={<ProductDetailPage />} />
+            <Route path="/"                           element={<HomePage />} />
+            <Route path="/products"                   element={<ProductsPage />} />
+            <Route path="/products/:id"               element={<ProductDetailPage />} />
 
             {/* Guest Only */}
-            <Route path="/login"                         element={<GuestRoute><LoginPage /></GuestRoute>} />
-            <Route path="/register"                      element={<GuestRoute><RegisterPage /></GuestRoute>} />
-            <Route path="/forgot-password"               element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
-            <Route path="/reset-password/:uid/:token"    element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+            <Route path="/login"                      element={<GuestRoute><LoginPage /></GuestRoute>} />
+            <Route path="/register"                   element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/forgot-password"            element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+            <Route path="/reset-password/:uid/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
 
             {/* Protected */}
-            <Route path="/profile"                       element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/profile"                    element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/cart"                       element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
 
             {/* Fallback */}
-            <Route path="*"                              element={<Navigate to="/" replace />} />
+            <Route path="*"                           element={<Navigate to="/" replace />} />
         </Routes>
     </>
 );
@@ -59,7 +62,9 @@ function App() {
     return (
         <Router>
             <AuthProvider>
-                <AppLayout />
+                <CartProvider>
+                    <AppLayout />
+                </CartProvider>
             </AuthProvider>
         </Router>
     );
