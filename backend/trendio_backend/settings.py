@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'products',
     'cart', 
     'orders',
+    'payments',
    
 ]
 
@@ -165,4 +166,8 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 import os
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# ─── Razorpay Settings ────────────────────────────────────────
+RAZORPAY_KEY_ID     = os.getenv('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET')
 

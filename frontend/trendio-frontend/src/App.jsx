@@ -12,6 +12,9 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrdersPage from './pages/OrdersPage';
+import OrderDetailPage from './pages/OrderDetailPage';
 
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated, loading } = useAuth();
@@ -51,6 +54,9 @@ const AppLayout = () => (
             {/* Protected */}
             <Route path="/profile"                    element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/cart"                       element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+            <Route path="/checkout"                   element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+            <Route path="/orders"                     element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+            <Route path="/orders/:orderNumber"        element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
 
             {/* Fallback */}
             <Route path="*"                           element={<Navigate to="/" replace />} />
