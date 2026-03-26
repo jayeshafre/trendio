@@ -54,9 +54,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = CustomUser
-        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'phone_number', 'date_joined')
-        # Email and date_joined cannot be changed
-        read_only_fields = ('id', 'email', 'date_joined')
+        fields = (
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'phone_number',
+            'date_joined',
+            'is_staff',       
+            'is_superuser',    
+        )
+        read_only_fields = (
+            'id',
+            'email',
+            'date_joined',
+            'is_staff',
+            'is_superuser',
+        )
 
 
 class ChangePasswordSerializer(serializers.Serializer):

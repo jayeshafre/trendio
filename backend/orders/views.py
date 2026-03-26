@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from django.db import transaction
 from cart.models import Cart
 from products.models import Product
+from django.db.models import Sum, Count
+from users.models import CustomUser
 from .models import Order, OrderItem
 from .serializers import (
     OrderSerializer,
@@ -234,4 +236,78 @@ class AdminUpdateOrderStatusView(APIView):
         return Response({
             'message': f'Order status updated from {old_status} to {order.get_status_display()}.',
             'order':   OrderSerializer(order).data
+        }, status=status.HTTP_200_OK)
+
+class AdminDashboardStatsView(APIView):
+    """
+    GET /api/orders/admin/stats/
+    Returns dashboard statistics for admin.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        from products.models import Product, Category
+
+        # ── Order Stats ───────────────────────────────────────
+        total_orders    = Order.objects.count()
+        pending_orders  = Order.objects.filter(status='pending').count()
+        confirmed_orders = Order.objects.filter(status='confirmed').count()
+        shipped_orders  = Order.objects.filter(status='shipped').count()
+        delivered_orders = Order.objects.filter(status='delivered').count()
+        cancelled_orders = Order.objects.filter(status='cancelled').count()
+
+        # ── Revenue ───────────────────────────────────────────
+        total_revenue = Order.objects.filter(
+            status__in=['confirmed', 'processing', 'shipped', 'delivered']
+        ).aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0
+
+        # ── Product Stats ─────────────────────────────────────
+        total_products    = Product.objects.count()
+        active_products   = Product.objects.filter(is_active=True).count()
+        out_of_stock      = Product.objects.filter(stock=0, is_active=True).count()
+        featured_products = Product.objects.filter(is_featured=True).count()
+
+        # ── Category Stats ────────────────────────────────────
+        total_categories = Category.objects.count()
+
+        # ── User Stats ────────────────────────────────────────
+        total_users = CustomUser.objects.filter(is_staff=False).count()
+
+        # ── Recent Orders ─────────────────────────────────────
+        recent_orders = Order.objects.select_related('user').order_by('-created_at')[:5]
+        recent_orders_data = [{
+            'order_number': o.order_number,
+            'user_email':   o.user.email,
+            'status':       o.status,
+            'grand_total':  str(o.grand_total),
+            'created_at':   o.created_at.isoformat(),
+        } for o in recent_orders]
+
+        return Response({
+            'orders': {
+                'total':     total_orders,
+                'pending':   pending_orders,
+                'confirmed': confirmed_orders,
+                'shipped':   shipped_orders,
+                'delivered': delivered_orders,
+                'cancelled': cancelled_orders,
+            },
+            'revenue': {
+                'total': str(total_revenue),
+            },
+            'products': {
+                'total':    total_products,
+                'active':   active_products,
+                'out_of_stock': out_of_stock,
+                'featured': featured_products,
+            },
+            'categories': {
+                'total': total_categories,
+            },
+            'users': {
+                'total': total_users,
+            },
+            'recent_orders': recent_orders_data,
         }, status=status.HTTP_200_OK)

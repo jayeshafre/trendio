@@ -98,19 +98,21 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
 
         return Response({
-            'message': f'Welcome back, {user.first_name or user.username}!',
-            'user': {
-                'id':         user.id,
-                'email':      user.email,
-                'username':   user.username,
-                'first_name': user.first_name,
-                'last_name':  user.last_name,
-            },
-            'tokens': {
-                'access':  str(refresh.access_token),
-                'refresh': str(refresh),
-            }
-        }, status=status.HTTP_200_OK)
+    'message': f'Welcome back, {user.first_name or user.username}!',
+    'user': {
+        'id':           user.id,
+        'email':        user.email,
+        'username':     user.username,
+        'first_name':   user.first_name,
+        'last_name':    user.last_name,
+        'is_staff':     user.is_staff,       # ← ADD THIS
+        'is_superuser': user.is_superuser,   # ← ADD THIS
+    },
+    'tokens': {
+        'access':  str(refresh.access_token),
+        'refresh': str(refresh),
+    }
+}, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):

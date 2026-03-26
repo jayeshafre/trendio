@@ -20,6 +20,10 @@ urlpatterns = [
          name='cancel_order'),
 
     # Admin URLs
+    path('admin/stats/',
+         views.AdminDashboardStatsView.as_view(),
+         name='admin_stats'),
+
     path('admin/all/',
          views.AdminOrderListView.as_view(),
          name='admin_order_list'),

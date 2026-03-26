@@ -188,3 +188,15 @@ class ProductsByCategoryView(generics.ListAPIView):
             is_active=True,
             category__slug=category_slug
         ).select_related('category')
+    
+
+class AdminProductListView(generics.ListAPIView):
+    """
+    GET /api/products/admin/all/
+    Admin only — get ALL products including inactive.
+    """
+    serializer_class   = ProductDetailSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        return Product.objects.all().select_related('category')
