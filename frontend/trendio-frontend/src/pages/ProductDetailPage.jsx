@@ -1,201 +1,285 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getProductDetail } from '../api/productApi';
-
-// ✅ NEW IMPORTS
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
-import toast, { Toaster } from 'react-hot-toast';
+import React, { useState, useEffect } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
+import { getProductDetail } from '../api/productApi'
+import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
+import toast from 'react-hot-toast'
 
 const ProductDetailPage = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
+  const { id }       = useParams()
+  const navigate     = useNavigate()
+  const { isAuthenticated } = useAuth()
+  const { addItem, loading: cartLoading } = useCart()
 
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [quantity, setQuantity] = useState(1);
-    const [error, setError] = useState('');
+  const [product, setProduct]   = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [quantity, setQuantity] = useState(1)
+  const [error, setError]       = useState('')
+  const [activeTab, setActiveTab] = useState('description')
 
-    // ✅ AUTH + CART
-    const { isAuthenticated } = useAuth();
-    const { addItem, loading: cartLoading } = useCart();
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const data = await getProductDetail(id)
+        setProduct(data)
+      } catch {
+        setError('Product not found.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProduct()
+  }, [id])
 
-    useEffect(() => {
-        const fetchProduct = async () => {
-            try {
-                const data = await getProductDetail(id);
-                setProduct(data);
-            } catch (err) {
-                setError('Product not found.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProduct();
-    }, [id]);
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to add items to your bag.')
+      navigate('/login')
+      return
+    }
+    await addItem(product.id, quantity)
+  }
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent"/>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-px h-16 bg-gold animate-pulse"/>
+        <p className="text-xs tracking-widest uppercase text-luxury-midgray">Loading</p>
+      </div>
+    </div>
+  )
+
+  if (error || !product) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-white">
+      <p className="font-serif text-3xl text-luxury-midgray">Product Not Found</p>
+      <Link
+        to="/products"
+        className="text-xs tracking-widest uppercase border-b border-black pb-0.5 hover:text-gold hover:border-gold transition-colors"
+      >
+        Continue Shopping
+      </Link>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Toaster position="top-right" />
+
+      {/* Breadcrumb */}
+      <div className="border-b border-luxury-gray">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <nav className="flex items-center gap-2 text-xs tracking-widest uppercase text-luxury-midgray">
+            <Link to="/" className="hover:text-gold transition-colors">Home</Link>
+            <span>/</span>
+            <Link to="/products" className="hover:text-gold transition-colors">Shop</Link>
+            {product.category && (
+              <>
+                <span>/</span>
+                <Link
+                  to={`/products?category=${product.category.slug}`}
+                  className="hover:text-gold transition-colors"
+                >
+                  {product.category.name}
+                </Link>
+              </>
+            )}
+            <span>/</span>
+            <span className="text-black">{product.name}</span>
+          </nav>
         </div>
-    );
+      </div>
 
-    if (error || !product) return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-            <div className="text-6xl">😕</div>
-            <h2 className="text-2xl font-bold text-gray-700">Product Not Found</h2>
-            <Link to="/products" className="bg-pink-500 text-white px-6 py-2 rounded-xl font-semibold hover:bg-pink-600">
-                Back to Products
-            </Link>
-        </div>
-    );
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
 
-    return (
-        <div className="min-h-screen bg-gray-50 py-10">
-            <div className="max-w-6xl mx-auto px-4">
-
-                {/* ✅ Toast Container */}
-                <Toaster position="top-right" />
-
-                {/* Breadcrumb */}
-                <nav className="flex items-center gap-2 text-sm text-gray-400 mb-8">
-                    <Link to="/" className="hover:text-pink-500">Home</Link>
-                    <span>/</span>
-                    <Link to="/products" className="hover:text-pink-500">Products</Link>
-                    <span>/</span>
-                    {product.category && (
-                        <>
-                            <Link
-                                to={`/products?category=${product.category.slug}`}
-                                className="hover:text-pink-500"
-                            >
-                                {product.category.name}
-                            </Link>
-                            <span>/</span>
-                        </>
-                    )}
-                    <span className="text-gray-600 font-medium">{product.name}</span>
-                </nav>
-
-                <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-
-                        {/* Image */}
-                        <div className="bg-gray-100 flex items-center justify-center min-h-96 relative">
-                            {product.image ? (
-                                <img
-                                    src={`http://localhost:8000${product.image}`}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover max-h-[500px]"
-                                />
-                            ) : (
-                                <div className="text-9xl">🛍️</div>
-                            )}
-                            {product.discount_percentage > 0 && (
-                                <div className="absolute top-4 left-4 bg-green-500 text-white font-bold px-3 py-1 rounded-full">
-                                    {product.discount_percentage}% OFF
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="p-8 flex flex-col justify-between">
-                            <div>
-
-                                {product.category && (
-                                    <Link
-                                        to={`/products?category=${product.category.slug}`}
-                                        className="text-pink-500 text-sm font-medium hover:underline"
-                                    >
-                                        {product.category.name}
-                                    </Link>
-                                )}
-
-                                <h1 className="text-3xl font-bold text-gray-800 mt-2 mb-4">
-                                    {product.name}
-                                </h1>
-
-                                {/* Price */}
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="text-4xl font-bold text-gray-900">
-                                        ₹{Number(product.price).toLocaleString('en-IN')}
-                                    </span>
-                                    {product.compare_price && (
-                                        <span className="text-xl text-gray-400 line-through">
-                                            ₹{Number(product.compare_price).toLocaleString('en-IN')}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Stock */}
-                                <div className="mb-6">
-                                    {product.is_in_stock ? (
-                                        <span className="text-green-600">
-                                            In Stock ({product.stock})
-                                        </span>
-                                    ) : (
-                                        <span className="text-red-500">
-                                            Out of Stock
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Quantity */}
-                                {product.is_in_stock && (
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <span>Quantity:</span>
-                                        <div className="flex border rounded-xl">
-                                            <button onClick={() => setQuantity(q => Math.max(1, q - 1))}>-</button>
-                                            <span className="px-4">{quantity}</span>
-                                            <button onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}>+</button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* ✅ ADD TO CART BUTTON */}
-                            <div className="space-y-4">
-
-                                <button
-                                    disabled={!product.is_in_stock || cartLoading}
-                                    onClick={async () => {
-                                        if (!isAuthenticated) {
-                                            toast.error('Please login to add items to cart.');
-                                            navigate('/login');
-                                            return;
-                                        }
-
-                                        try {
-                                            await addItem(product.id, quantity);
-                                            toast.success('Added to cart!');
-                                        } catch (err) {
-                                            toast.error('Failed to add item.');
-                                        }
-                                    }}
-                                    className={`w-full py-4 rounded-2xl font-bold text-lg ${
-                                        product.is_in_stock
-                                            ? 'bg-pink-500 text-white hover:bg-pink-600'
-                                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    }`}
-                                >
-                                    {cartLoading ? 'Adding...' :
-                                        product.is_in_stock ? '🛒 Add to Cart' : 'Out of Stock'}
-                                </button>
-
-                                <button
-                                    onClick={() => navigate('/products')}
-                                    className="w-full py-3 border rounded-xl"
-                                >
-                                    ← Continue Shopping
-                                </button>
-                            </div>
-
-                        </div>
-                    </div>
+          {/* ── Image ────────────────────────────────────── */}
+          <div className="relative">
+            <div className="aspect-[3/4] overflow-hidden bg-luxury-offwhite">
+              {product.image ? (
+                <img
+                  src={`http://localhost:8000${product.image}`}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-8xl opacity-10">◈</span>
                 </div>
+              )}
             </div>
-        </div>
-    );
-};
 
-export default ProductDetailPage;
+            {/* Badges */}
+            <div className="absolute top-4 left-4 flex flex-col gap-2">
+              {product.discount_percentage > 0 && (
+                <span className="bg-black text-white text-xs tracking-widest px-3 py-1">
+                  -{product.discount_percentage}%
+                </span>
+              )}
+              {product.is_featured && (
+                <span className="bg-gold text-black text-xs tracking-widest px-3 py-1">
+                  Featured
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* ── Info ─────────────────────────────────────── */}
+          <div className="flex flex-col justify-center">
+
+            {/* Category */}
+            {product.category && (
+              <Link
+                to={`/products?category=${product.category.slug}`}
+                className="text-xs tracking-widest uppercase text-gold hover:text-gold-dark transition-colors mb-3"
+              >
+                {product.category.name}
+              </Link>
+            )}
+
+            {/* Name */}
+            <h1 className="font-serif text-4xl font-normal text-black leading-tight mb-4">
+              {product.name}
+            </h1>
+
+            {/* Divider */}
+            <div className="w-12 h-px bg-gold mb-6"/>
+
+            {/* Price */}
+            <div className="flex items-baseline gap-4 mb-8">
+              <span className="font-serif text-3xl font-normal text-black">
+                ₹{Number(product.price).toLocaleString('en-IN')}
+              </span>
+              {product.compare_price && (
+                <span className="text-luxury-midgray line-through text-lg">
+                  ₹{Number(product.compare_price).toLocaleString('en-IN')}
+                </span>
+              )}
+              {product.discount_percentage > 0 && (
+                <span className="text-xs tracking-widest text-gold uppercase">
+                  {product.discount_percentage}% off
+                </span>
+              )}
+            </div>
+
+            {/* Stock Status */}
+            <div className="mb-8">
+              {product.is_in_stock ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-black rounded-full"/>
+                  <span className="text-xs tracking-widest uppercase text-black">
+                    In Stock — {product.stock} Available
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-luxury-midgray rounded-full"/>
+                  <span className="text-xs tracking-widest uppercase text-luxury-midgray">
+                    Sold Out
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Quantity */}
+            {product.is_in_stock && (
+              <div className="mb-8">
+                <p className="text-xs tracking-widest uppercase mb-3">Quantity</p>
+                <div className="flex items-center border border-luxury-gray w-fit">
+                  <button
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    className="w-10 h-10 flex items-center justify-center hover:bg-luxury-offwhite transition-colors text-lg"
+                  >
+                    −
+                  </button>
+                  <span className="w-12 h-10 flex items-center justify-center text-sm font-medium border-x border-luxury-gray">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}
+                    className="w-10 h-10 flex items-center justify-center hover:bg-luxury-offwhite transition-colors text-lg"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col gap-3 mb-10">
+              <button
+                onClick={handleAddToCart}
+                disabled={!product.is_in_stock || cartLoading}
+                className={`w-full py-4 text-xs tracking-widest uppercase font-medium transition-all duration-300 ${
+                  product.is_in_stock
+                    ? 'bg-black text-white hover:bg-luxury-darkgray'
+                    : 'bg-luxury-gray text-luxury-midgray cursor-not-allowed'
+                }`}
+              >
+                {cartLoading ? 'Adding...' : product.is_in_stock ? 'Add to Bag' : 'Sold Out'}
+              </button>
+              <button
+                onClick={() => navigate('/products')}
+                className="w-full py-4 text-xs tracking-widest uppercase font-medium border border-luxury-gray hover:border-black transition-all duration-300"
+              >
+                Continue Shopping
+              </button>
+            </div>
+
+            {/* SKU */}
+            {product.sku && (
+              <p className="text-xs text-luxury-midgray tracking-widest mb-8">
+                SKU: {product.sku}
+              </p>
+            )}
+
+            {/* Tabs */}
+            <div className="border-t border-luxury-gray pt-6">
+              <div className="flex gap-6 mb-4">
+                {['description', 'details', 'delivery'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`text-xs tracking-widest uppercase pb-2 transition-all ${
+                      activeTab === tab
+                        ? 'border-b border-black text-black'
+                        : 'text-luxury-midgray hover:text-black'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-sm text-luxury-darkgray leading-relaxed tracking-wide">
+                {activeTab === 'description' && (
+                  <p>{product.description || 'Premium quality fashion piece from our latest collection.'}</p>
+                )}
+                {activeTab === 'details' && (
+                  <ul className="space-y-1.5">
+                    <li>• Premium quality materials</li>
+                    <li>• Carefully crafted construction</li>
+                    <li>• True to size fit</li>
+                    <li>• Machine washable</li>
+                  </ul>
+                )}
+                {activeTab === 'delivery' && (
+                  <ul className="space-y-1.5">
+                    <li>• Free shipping on orders above ₹999</li>
+                    <li>• Standard delivery: 3-5 business days</li>
+                    <li>• Express delivery available</li>
+                    <li>• Easy 7-day returns</li>
+                  </ul>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default ProductDetailPage

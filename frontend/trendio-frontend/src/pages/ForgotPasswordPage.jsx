@@ -1,164 +1,158 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
-import Input from '../components/common/Input';
-import Button from '../components/common/Button';
-import { forgotPassword } from '../api/authApi';
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import toast, { Toaster } from 'react-hot-toast'
+import Input from '../components/common/Input'
+import { forgotPassword } from '../api/authApi'
 
 const ForgotPasswordPage = () => {
-    const [email, setEmail]       = useState('');
-    const [loading, setLoading]   = useState(false);
-    const [submitted, setSubmitted] = useState(false);
-    const [error, setError]       = useState('');
+  const [email, setEmail]         = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError]         = useState('')
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!email) { setError('Email is required'); return }
+    if (!/\S+@\S+\.\S+/.test(email)) { setError('Enter a valid email'); return }
 
-        if (!email) {
-            setError('Email is required');
-            return;
-        }
-        if (!/\S+@\S+\.\S+/.test(email)) {
-            setError('Enter a valid email address');
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-
-        try {
-            await forgotPassword(email);
-            setSubmitted(true);
-        } catch (error) {
-            const serverError = error.response?.data;
-            if (serverError?.email) {
-                setError(serverError.email[0] || serverError.email);
-            } else if (serverError?.message) {
-                setError(serverError.message);
-            } else {
-                toast.error('Something went wrong. Please try again.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // ─── Success State ────────────────────────────────────────
-    if (submitted) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-pink-50 to-gray-100 flex items-center justify-center p-4">
-                <div className="w-full max-w-md">
-                    <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-
-                        {/* Success Icon */}
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                            Check your email
-                        </h2>
-                        <p className="text-gray-500 text-sm mb-2">
-                            We sent a password reset link to:
-                        </p>
-                        <p className="text-pink-500 font-semibold mb-6">
-                            {email}
-                        </p>
-                        <p className="text-gray-400 text-xs mb-8">
-                            Didn't receive the email? Check your spam folder or try again.
-                        </p>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => setSubmitted(false)}
-                                className="w-full border-2 border-pink-500 text-pink-500 py-3 rounded-lg font-semibold text-sm hover:bg-pink-50 transition-colors"
-                            >
-                                Try a different email
-                            </button>
-                            <Link
-                                to="/login"
-                                className="block w-full text-center text-gray-500 text-sm hover:text-gray-700"
-                            >
-                                Back to Login
-                            </Link>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        );
+    setLoading(true)
+    setError('')
+    try {
+      await forgotPassword(email)
+      setSubmitted(true)
+    } catch (error) {
+      const serverError = error.response?.data
+      if (serverError?.email) setError(serverError.email[0] || serverError.email)
+      else toast.error('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
+  }
 
-    // ─── Form State ───────────────────────────────────────────
+  if (submitted) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-pink-50 to-gray-100 flex items-center justify-center p-4">
-            <Toaster position="top-right" />
-            <div className="w-full max-w-md">
-                <div className="bg-white rounded-2xl shadow-lg p-8">
+      <div className="min-h-screen bg-white flex">
 
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                        <Link to="/" className="text-2xl font-bold text-pink-500">
-                            Trendio
-                        </Link>
-
-                        {/* Lock Icon */}
-                        <div className="w-14 h-14 bg-pink-100 rounded-full flex items-center justify-center mx-auto mt-4 mb-4">
-                            <svg className="w-7 h-7 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-
-                        <h2 className="text-xl font-bold text-gray-800">
-                            Forgot your password?
-                        </h2>
-                        <p className="text-gray-500 text-sm mt-2">
-                            No worries! Enter your email and we'll send you a reset link.
-                        </p>
-                    </div>
-
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <Input
-                            label="Email Address"
-                            type="email"
-                            name="email"
-                            value={email}
-                            onChange={(e) => {
-                                setEmail(e.target.value);
-                                if (error) setError('');
-                            }}
-                            placeholder="john@example.com"
-                            error={error}
-                            required
-                        />
-
-                        <Button
-                            type="submit"
-                            loading={loading}
-                            fullWidth
-                        >
-                            Send Reset Link
-                        </Button>
-                    </form>
-
-                    {/* Back to Login */}
-                    <p className="text-center text-sm text-gray-500 mt-6">
-                        Remember your password?{' '}
-                        <Link
-                            to="/login"
-                            className="text-pink-500 font-semibold hover:underline"
-                        >
-                            Back to Login
-                        </Link>
-                    </p>
-
-                </div>
-            </div>
+        {/* Left Image */}
+        <div className="hidden lg:block flex-1 relative overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200&auto=format&fit=crop&q=80"
+            alt="Fashion"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40"/>
         </div>
-    );
-};
 
-export default ForgotPasswordPage;
+        {/* Right */}
+        <div className="flex-1 lg:max-w-md flex flex-col justify-center px-12 py-16">
+          <Link to="/" className="font-serif text-2xl font-bold tracking-wider text-black mb-16 block">
+            TRENDIO
+          </Link>
+
+          <div className="text-center">
+            {/* Check Icon */}
+            <div className="w-16 h-16 border-2 border-gold flex items-center justify-center mx-auto mb-8">
+              <svg className="w-8 h-8 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+
+            <p className="text-gold text-xs tracking-widest uppercase mb-3">Email Sent</p>
+            <h2 className="font-serif text-3xl font-normal mb-4">Check Your Inbox</h2>
+            <p className="text-luxury-midgray text-sm tracking-wide mb-2">
+              We sent a password reset link to:
+            </p>
+            <p className="text-black font-medium text-sm mb-8">{email}</p>
+            <p className="text-luxury-midgray text-xs tracking-wide mb-10">
+              Didn't receive it? Check your spam folder or try again.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => setSubmitted(false)}
+                className="w-full border border-black text-black text-xs tracking-widest uppercase py-3 hover:bg-black hover:text-white transition-all"
+              >
+                Try Different Email
+              </button>
+              <Link
+                to="/login"
+                className="block text-xs tracking-widest uppercase text-luxury-midgray hover:text-black transition-colors text-center mt-4"
+              >
+                ← Back to Sign In
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-white flex">
+      <Toaster position="top-right" />
+
+      {/* Left Image */}
+      <div className="hidden lg:block flex-1 relative overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200&auto=format&fit=crop&q=80"
+          alt="Fashion"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/40"/>
+        <div className="absolute bottom-12 left-12">
+          <h2 className="font-serif text-5xl text-white font-normal leading-tight">
+            Reset Your<br /><em>Password</em>
+          </h2>
+          <div className="w-12 h-px bg-gold mt-4"/>
+        </div>
+      </div>
+
+      {/* Right Form */}
+      <div className="flex-1 lg:max-w-md flex flex-col justify-center px-12 py-16">
+
+        <Link to="/" className="font-serif text-2xl font-bold tracking-wider text-black mb-16 block">
+          TRENDIO
+        </Link>
+
+        <div className="mb-10">
+          <p className="text-gold text-xs tracking-widest uppercase mb-2">Account Recovery</p>
+          <h1 className="font-serif text-3xl font-normal mb-3">Forgot Password?</h1>
+          <p className="text-luxury-midgray text-sm tracking-wide leading-relaxed">
+            Enter your email address and we'll send you a secure link to reset your password.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Input
+            label="Email Address"
+            type="email"
+            name="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); if (error) setError('') }}
+            placeholder="your@email.com"
+            error={error}
+            required
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-black text-white text-xs tracking-widest uppercase py-4 hover:bg-luxury-darkgray transition-all disabled:opacity-40"
+          >
+            {loading ? 'Sending...' : 'Send Reset Link'}
+          </button>
+        </form>
+
+        <p className="text-xs tracking-wide text-luxury-midgray mt-8 text-center">
+          Remember your password?{' '}
+          <Link to="/login" className="text-black border-b border-black hover:text-gold hover:border-gold transition-colors">
+            Sign In
+          </Link>
+        </p>
+
+      </div>
+    </div>
+  )
+}
+
+export default ForgotPasswordPage
