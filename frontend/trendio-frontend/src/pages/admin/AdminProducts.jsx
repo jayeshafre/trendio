@@ -1,53 +1,89 @@
 import React, { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { getAdminProducts, createProduct, updateProduct, deleteProduct } from '../../api/adminApi'
+import {
+  getAdminProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct
+} from '../../api/adminApi'
 import { getCategories } from '../../api/productApi'
 
 const AdminProducts = () => {
   const [products, setProducts]     = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading]       = useState(true)
-  const [showModal, setShowModal]   = useState(false)
+  const [modalOpen, setModalOpen]   = useState(false)
   const [editProduct, setEditProduct] = useState(null)
   const [deleting, setDeleting]     = useState(null)
   const [search, setSearch]         = useState('')
 
-  const fetchData = async () => {
+  const loadData = async () => {
+    setLoading(true)
     try {
-      const [prods, cats] = await Promise.all([getAdminProducts(), getCategories()])
-      setProducts(Array.isArray(prods) ? prods : prods.results || [])
+      const [prods, cats] = await Promise.all([
+        getAdminProducts(),
+        getCategories()
+      ])
+      setProducts(Array.isArray(prods) ? prods : (prods.results || []))
       setCategories(cats)
-    } catch {
-      toast.error('Failed to load.')
+    } catch (err) {
+      console.error('Load error:', err)
+      toast.error('Failed to load products.')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { loadData() }, [])
+
+  // ── Button Handlers ───────────────────────────────────────
+  const openAddModal = () => {
+    console.log('Opening add modal')
+    setEditProduct(null)
+    setModalOpen(true)
+  }
+
+  const openEditModal = (product) => {
+    console.log('Opening edit modal for:', product.name)
+    setEditProduct(product)
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setEditProduct(null)
+  }
 
   const handleDelete = async (product) => {
     if (!window.confirm(`Delete "${product.name}"?`)) return
     setDeleting(product.id)
     try {
       await deleteProduct(product.id)
-      toast.success(`"${product.name}" deleted.`)
-      fetchData()
-    } catch { toast.error('Delete failed.') }
-    finally { setDeleting(null) }
+      toast.success('Product deleted.')
+      await loadData()
+    } catch {
+      toast.error('Delete failed.')
+    } finally {
+      setDeleting(null)
+    }
   }
 
   const handleSave = async (formData, isEdit) => {
     try {
-      if (isEdit) await updateProduct(editProduct.id, formData)
-      else await createProduct(formData)
-      toast.success(isEdit ? 'Product updated.' : 'Product created.')
-      setShowModal(false)
-      fetchData()
-    } catch (error) {
+      if (isEdit) {
+        await updateProduct(editProduct.id, formData)
+        toast.success('Product updated.')
+      } else {
+        await createProduct(formData)
+        toast.success('Product created.')
+      }
+      closeModal()
+      await loadData()
+    } catch (err) {
+      console.error('Save error:', err)
       toast.error('Failed to save.')
-      throw error
+      throw err
     }
   }
 
@@ -56,23 +92,12 @@ const AdminProducts = () => {
   )
 
   return (
-    <AdminLayout
-      title="Products"
-      subtitle={`${products.length} total`}
-      action={
-        <button
-          onClick={() => { setEditProduct(null); setShowModal(true) }}
-          className="bg-black text-white text-xs tracking-widest uppercase px-6 py-3 hover:bg-luxury-darkgray transition-all"
-        >
-          + Add Product
-        </button>
-      }
-    >
+    <AdminLayout title="Products" subtitle={`${products.length} products`}>
       <Toaster position="top-right" />
 
-      {/* Search */}
-      <div className="bg-white border border-luxury-gray mb-6">
-        <div className="flex items-center gap-4 px-4 border-b border-luxury-gray py-3">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center border border-luxury-gray bg-white px-4 py-2.5 gap-3" style={{ minWidth: '280px' }}>
           <svg className="w-4 h-4 text-luxury-midgray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
@@ -81,9 +106,25 @@ const AdminProducts = () => {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search products..."
-            className="flex-1 text-sm tracking-wide focus:outline-none text-black placeholder-luxury-midgray py-1"
+            className="text-sm focus:outline-none text-black placeholder-luxury-midgray bg-transparent flex-1"
           />
         </div>
+
+        <button
+          onClick={openAddModal}
+          style={{
+            backgroundColor: '#000',
+            color: '#fff',
+            padding: '12px 24px',
+            fontSize: '11px',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          + Add Product
+        </button>
       </div>
 
       {/* Table */}
@@ -92,106 +133,140 @@ const AdminProducts = () => {
           <div className="w-px h-16 bg-gold animate-pulse"/>
         </div>
       ) : (
-        <div className="bg-white border border-luxury-gray overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-luxury-offwhite border-b border-luxury-gray">
+        <div className="bg-white border border-luxury-gray">
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#F5F5F5' }}>
               <tr>
                 {['Product', 'Category', 'Price', 'Stock', 'Status', 'Featured', 'Actions'].map(h => (
-                  <th key={h} className="px-6 py-4 text-left text-xs tracking-widest uppercase text-luxury-midgray font-normal">
+                  <th key={h} style={{
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontSize: '11px',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#999',
+                    fontWeight: 'normal',
+                    borderBottom: '1px solid #E8E8E8'
+                  }}>
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-luxury-offwhite">
-              {filtered.map(product => (
-                <tr key={product.id} className="hover:bg-luxury-offwhite transition-colors">
-
+            <tbody>
+              {filtered.map((product, idx) => (
+                <tr
+                  key={product.id}
+                  style={{
+                    backgroundColor: idx % 2 === 0 ? '#fff' : '#fafafa',
+                    borderBottom: '1px solid #F5F5F5'
+                  }}
+                >
                   {/* Product */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-12 bg-luxury-offwhite overflow-hidden flex-shrink-0">
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '40px', height: '48px', backgroundColor: '#F5F5F5', overflow: 'hidden', flexShrink: 0 }}>
                         {product.image ? (
                           <img
                             src={`http://localhost:8000${product.image}`}
                             alt={product.name}
-                            className="w-full h-full object-cover"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-lg opacity-20">◈</div>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>◈</div>
                         )}
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-black tracking-wide max-w-[180px] truncate">
+                        <p style={{ fontSize: '13px', fontWeight: '500', color: '#000', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {product.name}
                         </p>
                         {product.sku && (
-                          <p className="text-xs text-luxury-midgray tracking-wide">SKU: {product.sku}</p>
+                          <p style={{ fontSize: '11px', color: '#999' }}>SKU: {product.sku}</p>
                         )}
                       </div>
                     </div>
                   </td>
 
                   {/* Category */}
-                  <td className="px-6 py-4 text-xs text-luxury-midgray tracking-widest uppercase">
+                  <td style={{ padding: '16px', fontSize: '12px', color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {product.category?.name || '—'}
                   </td>
 
                   {/* Price */}
-                  <td className="px-6 py-4">
-                    <p className="font-serif text-sm text-black">
+                  <td style={{ padding: '16px' }}>
+                    <p style={{ fontSize: '14px', color: '#000' }}>
                       ₹{Number(product.price).toLocaleString('en-IN')}
                     </p>
                     {product.compare_price && (
-                      <p className="text-xs text-luxury-midgray line-through">
+                      <p style={{ fontSize: '11px', color: '#999', textDecoration: 'line-through' }}>
                         ₹{Number(product.compare_price).toLocaleString('en-IN')}
                       </p>
                     )}
                   </td>
 
                   {/* Stock */}
-                  <td className="px-6 py-4">
-                    <span className={`font-serif text-sm ${
-                      product.stock === 0 ? 'text-red-500' :
-                      product.stock < 10 ? 'text-orange-500' : 'text-black'
-                    }`}>
+                  <td style={{ padding: '16px' }}>
+                    <span style={{
+                      fontSize: '14px',
+                      color: product.stock === 0 ? '#ef4444' : product.stock < 10 ? '#f97316' : '#000'
+                    }}>
                       {product.stock}
                     </span>
                   </td>
 
                   {/* Status */}
-                  <td className="px-6 py-4">
-                    <span className={`text-xs tracking-widest uppercase px-2 py-1 ${
-                      product.is_active
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-700'
-                    }`}>
+                  <td style={{ padding: '16px' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      padding: '3px 8px',
+                      backgroundColor: product.is_active ? '#f0fdf4' : '#fef2f2',
+                      color: product.is_active ? '#166534' : '#991b1b'
+                    }}>
                       {product.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
 
                   {/* Featured */}
-                  <td className="px-6 py-4">
-                    <span className={`text-xs tracking-widest uppercase ${
-                      product.is_featured ? 'text-gold' : 'text-luxury-midgray'
-                    }`}>
-                      {product.is_featured ? '◈ Yes' : '—'}
-                    </span>
+                  <td style={{ padding: '16px', fontSize: '12px', color: product.is_featured ? '#D4AF37' : '#999' }}>
+                    {product.is_featured ? '◈ Yes' : '—'}
                   </td>
 
                   {/* Actions */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', gap: '16px' }}>
                       <button
-                        onClick={() => { setEditProduct(product); setShowModal(true) }}
-                        className="text-xs tracking-widest uppercase text-luxury-midgray hover:text-black transition-colors border-b border-luxury-midgray pb-0.5"
+                        onClick={() => openEditModal(product)}
+                        style={{
+                          fontSize: '11px',
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                          color: '#2563eb',
+                          background: 'none',
+                          border: 'none',
+                          borderBottom: '1px solid #2563eb',
+                          cursor: 'pointer',
+                          padding: '0 0 2px 0'
+                        }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(product)}
                         disabled={deleting === product.id}
-                        className="text-xs tracking-widest uppercase text-red-400 hover:text-red-600 transition-colors border-b border-red-400 pb-0.5 disabled:opacity-40"
+                        style={{
+                          fontSize: '11px',
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                          color: '#ef4444',
+                          background: 'none',
+                          border: 'none',
+                          borderBottom: '1px solid #ef4444',
+                          cursor: deleting === product.id ? 'not-allowed' : 'pointer',
+                          padding: '0 0 2px 0',
+                          opacity: deleting === product.id ? 0.4 : 1
+                        }}
                       >
                         {deleting === product.id ? '...' : 'Delete'}
                       </button>
@@ -203,39 +278,40 @@ const AdminProducts = () => {
           </table>
 
           {filtered.length === 0 && (
-            <div className="text-center py-16 text-luxury-midgray">
-              <p className="text-xs tracking-widest uppercase">No products found</p>
+            <div style={{ textAlign: 'center', padding: '64px', color: '#999', fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              {search ? 'No products match your search' : 'No products yet. Click + Add Product to start.'}
             </div>
           )}
         </div>
       )}
 
       {/* Modal */}
-      {showModal && (
+      {modalOpen && (
         <ProductModal
           product={editProduct}
           categories={categories}
           onSave={handleSave}
-          onClose={() => setShowModal(false)}
+          onClose={closeModal}
         />
       )}
+
     </AdminLayout>
   )
 }
 
-// ─── Product Modal ────────────────────────────────────────────
+// ─── Product Modal ─────────────────────────────────────────────
 const ProductModal = ({ product, categories, onSave, onClose }) => {
   const isEdit = !!product
   const [loading, setLoading] = useState(false)
   const [imagePreview, setImagePreview] = useState(
     product?.image ? `http://localhost:8000${product.image}` : null
   )
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     name:          product?.name          || '',
     description:   product?.description   || '',
     price:         product?.price         || '',
     compare_price: product?.compare_price || '',
-    stock:         product?.stock         || 0,
+    stock:         product?.stock         ?? 0,
     sku:           product?.sku           || '',
     category_id:   product?.category?.id  || '',
     is_active:     product?.is_active     ?? true,
@@ -247,12 +323,14 @@ const ProductModal = ({ product, categories, onSave, onClose }) => {
     const { name, value, type, checked, files } = e.target
     if (type === 'file') {
       const file = files[0]
-      setFormData(prev => ({ ...prev, image: file }))
-      if (file) setImagePreview(URL.createObjectURL(file))
+      if (file) {
+        setForm(prev => ({ ...prev, image: file }))
+        setImagePreview(URL.createObjectURL(file))
+      }
     } else if (type === 'checkbox') {
-      setFormData(prev => ({ ...prev, [name]: checked }))
+      setForm(prev => ({ ...prev, [name]: checked }))
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }))
+      setForm(prev => ({ ...prev, [name]: value }))
     }
   }
 
@@ -260,133 +338,154 @@ const ProductModal = ({ product, categories, onSave, onClose }) => {
     e.preventDefault()
     setLoading(true)
     const data = new FormData()
-    Object.entries(formData).forEach(([key, value]) => {
+    Object.entries(form).forEach(([key, value]) => {
       if (key === 'image' && !value) return
       if (value !== null && value !== undefined) data.append(key, value)
     })
-    try { await onSave(data, isEdit) }
-    catch { }
-    finally { setLoading(false) }
+    try {
+      await onSave(data, isEdit)
+    } catch {
+      // handled in parent
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-full max-w-xl max-h-[90vh] overflow-y-auto">
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '16px'
+      }}
+    >
+      <div style={{
+        backgroundColor: '#fff',
+        width: '100%',
+        maxWidth: '560px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.3)'
+      }}>
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-luxury-gray">
-          <h2 className="font-serif text-xl font-normal">
-            {isEdit ? 'Edit Product' : 'Add Product'}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '20px 32px',
+          borderBottom: '1px solid #E8E8E8',
+          position: 'sticky',
+          top: 0,
+          backgroundColor: '#fff',
+          zIndex: 1
+        }}>
+          <h2 style={{ fontSize: '20px', fontFamily: 'Georgia, serif', fontWeight: 'normal' }}>
+            {isEdit ? 'Edit Product' : 'Add New Product'}
           </h2>
-          <button onClick={onClose} className="text-luxury-midgray hover:text-black transition-colors text-2xl leading-none">
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: '#999',
+              lineHeight: 1,
+              padding: '4px 8px'
+            }}
+          >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* Image */}
           <div>
-            <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-3">
+            <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '12px' }}>
               Product Image
             </label>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-20 bg-luxury-offwhite flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ width: '64px', height: '80px', backgroundColor: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                 {imagePreview ? (
-                  <img src={imagePreview} alt="preview" className="w-full h-full object-cover"/>
+                  <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
                 ) : (
-                  <span className="text-2xl opacity-20">◈</span>
+                  <span style={{ opacity: 0.2, fontSize: '24px' }}>◈</span>
                 )}
               </div>
-              <input
-                type="file"
-                name="image"
-                accept="image/*"
-                onChange={handleChange}
-                className="text-xs text-luxury-midgray file:mr-3 file:py-2 file:px-4 file:border file:border-black file:bg-white file:text-black file:text-xs file:tracking-widest file:uppercase hover:file:bg-black hover:file:text-white file:transition-all"
+              <input type="file" name="image" accept="image/*" onChange={handleChange}
+                style={{ fontSize: '12px', color: '#666' }}
               />
             </div>
           </div>
 
           {/* Name */}
           <div>
-            <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-1.5">
-              Product Name <span className="text-gold">*</span>
+            <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '6px' }}>
+              Name *
             </label>
-            <input
-              type="text" name="name" value={formData.name} onChange={handleChange} required
+            <input type="text" name="name" value={form.name} onChange={handleChange} required
               placeholder="e.g. Classic Linen Shirt"
-              className="w-full border-b-2 border-luxury-gray px-0 py-2.5 text-sm focus:outline-none focus:border-black transition-all tracking-wide"
+              style={{ width: '100%', borderBottom: '2px solid #E8E8E8', padding: '10px 0', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-1.5">
+            <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '6px' }}>
               Description
             </label>
-            <textarea
-              name="description" value={formData.description} onChange={handleChange} rows={3}
+            <textarea name="description" value={form.description} onChange={handleChange} rows={3}
               placeholder="Product description..."
-              className="w-full border-b-2 border-luxury-gray px-0 py-2.5 text-sm focus:outline-none focus:border-black transition-all resize-none tracking-wide"
+              style={{ width: '100%', borderBottom: '2px solid #E8E8E8', padding: '10px 0', fontSize: '14px', outline: 'none', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
             />
           </div>
 
           {/* Price Row */}
-          <div className="grid grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div>
-              <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-1.5">
-                Price (₹) <span className="text-gold">*</span>
-              </label>
-              <input
-                type="number" name="price" value={formData.price} onChange={handleChange} required min="0" step="0.01"
-                placeholder="499"
-                className="w-full border-b-2 border-luxury-gray px-0 py-2.5 text-sm focus:outline-none focus:border-black transition-all"
+              <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '6px' }}>Price (₹) *</label>
+              <input type="number" name="price" value={form.price} onChange={handleChange} required min="0" step="0.01" placeholder="499"
+                style={{ width: '100%', borderBottom: '2px solid #E8E8E8', padding: '10px 0', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <div>
-              <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-1.5">
-                Compare Price (₹)
-              </label>
-              <input
-                type="number" name="compare_price" value={formData.compare_price} onChange={handleChange} min="0" step="0.01"
-                placeholder="999"
-                className="w-full border-b-2 border-luxury-gray px-0 py-2.5 text-sm focus:outline-none focus:border-black transition-all"
+              <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '6px' }}>Compare Price (₹)</label>
+              <input type="number" name="compare_price" value={form.compare_price} onChange={handleChange} min="0" step="0.01" placeholder="999"
+                style={{ width: '100%', borderBottom: '2px solid #E8E8E8', padding: '10px 0', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
           </div>
 
           {/* Stock + SKU */}
-          <div className="grid grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div>
-              <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-1.5">
-                Stock <span className="text-gold">*</span>
-              </label>
-              <input
-                type="number" name="stock" value={formData.stock} onChange={handleChange} required min="0"
-                className="w-full border-b-2 border-luxury-gray px-0 py-2.5 text-sm focus:outline-none focus:border-black transition-all"
+              <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '6px' }}>Stock *</label>
+              <input type="number" name="stock" value={form.stock} onChange={handleChange} required min="0"
+                style={{ width: '100%', borderBottom: '2px solid #E8E8E8', padding: '10px 0', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <div>
-              <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-1.5">
-                SKU
-              </label>
-              <input
-                type="text" name="sku" value={formData.sku} onChange={handleChange}
-                placeholder="TSH-WHT-001"
-                className="w-full border-b-2 border-luxury-gray px-0 py-2.5 text-sm focus:outline-none focus:border-black transition-all"
+              <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '6px' }}>SKU</label>
+              <input type="text" name="sku" value={form.sku} onChange={handleChange} placeholder="TSH-WHT-001"
+                style={{ width: '100%', borderBottom: '2px solid #E8E8E8', padding: '10px 0', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
           </div>
 
           {/* Category */}
           <div>
-            <label className="text-xs font-medium tracking-widest uppercase text-luxury-darkgray block mb-1.5">
-              Category
-            </label>
-            <select
-              name="category_id" value={formData.category_id} onChange={handleChange}
-              className="w-full border-b-2 border-luxury-gray px-0 py-2.5 text-sm focus:outline-none focus:border-black transition-all bg-transparent"
+            <label style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#444', display: 'block', marginBottom: '6px' }}>Category</label>
+            <select name="category_id" value={form.category_id} onChange={handleChange}
+              style={{ width: '100%', borderBottom: '2px solid #E8E8E8', padding: '10px 0', fontSize: '14px', outline: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' }}
             >
               <option value="">Select Category</option>
               {categories.map(cat => (
@@ -396,34 +495,54 @@ const ProductModal = ({ product, categories, onSave, onClose }) => {
           </div>
 
           {/* Toggles */}
-          <div className="flex gap-8 pt-2">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox" name="is_active" checked={formData.is_active} onChange={handleChange}
-                className="accent-black w-4 h-4"
+          <div style={{ display: 'flex', gap: '32px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange}
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
               />
-              <span className="text-xs tracking-widest uppercase">Active</span>
+              <span style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Active</span>
             </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox" name="is_featured" checked={formData.is_featured} onChange={handleChange}
-                className="accent-black w-4 h-4"
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" name="is_featured" checked={form.is_featured} onChange={handleChange}
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
               />
-              <span className="text-xs tracking-widest uppercase">Featured</span>
+              <span style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Featured</span>
             </label>
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-4 pt-4 border-t border-luxury-gray">
+          {/* Submit Buttons */}
+          <div style={{ display: 'flex', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E8E8E8' }}>
             <button
-              type="submit" disabled={loading}
-              className="flex-1 bg-black text-white text-xs tracking-widest uppercase py-3.5 hover:bg-luxury-darkgray transition-all disabled:opacity-40"
+              type="submit"
+              disabled={loading}
+              style={{
+                flex: 1,
+                backgroundColor: loading ? '#999' : '#000',
+                color: '#fff',
+                padding: '14px',
+                fontSize: '11px',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer'
+              }}
             >
               {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Add Product'}
             </button>
             <button
-              type="button" onClick={onClose}
-              className="flex-1 border border-luxury-gray text-black text-xs tracking-widest uppercase py-3.5 hover:border-black transition-all"
+              type="button"
+              onClick={onClose}
+              style={{
+                flex: 1,
+                backgroundColor: '#fff',
+                color: '#000',
+                padding: '14px',
+                fontSize: '11px',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                border: '1px solid #E8E8E8',
+                cursor: 'pointer'
+              }}
             >
               Cancel
             </button>

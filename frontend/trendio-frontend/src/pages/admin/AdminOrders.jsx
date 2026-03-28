@@ -12,7 +12,9 @@ const statusStyles = {
   cancelled:  'bg-red-50 text-red-700',
 }
 
-const statusOptions = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
+const statusOptions = [
+  'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'
+]
 
 const AdminOrders = () => {
   const [orders, setOrders]             = useState([])
@@ -55,24 +57,26 @@ const AdminOrders = () => {
       <Toaster position="top-right" />
 
       {/* Filter Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-luxury-gray overflow-x-auto">
+      <div className="flex gap-0 mb-6 border-b border-luxury-gray overflow-x-auto">
         <button
+          type="button"
           onClick={() => setStatusFilter('')}
-          className={`px-4 py-3 text-xs tracking-widest uppercase whitespace-nowrap transition-all border-b-2 ${
+          className={`px-5 py-3 text-xs tracking-widest uppercase whitespace-nowrap transition-all border-b-2 cursor-pointer ${
             statusFilter === ''
-              ? 'border-black text-black'
+              ? 'border-black text-black font-medium'
               : 'border-transparent text-luxury-midgray hover:text-black'
           }`}
         >
-          All
+          All Orders
         </button>
         {statusOptions.map(s => (
           <button
             key={s}
+            type="button"
             onClick={() => setStatusFilter(s)}
-            className={`px-4 py-3 text-xs tracking-widest uppercase whitespace-nowrap transition-all border-b-2 ${
+            className={`px-5 py-3 text-xs tracking-widest uppercase whitespace-nowrap transition-all border-b-2 cursor-pointer ${
               statusFilter === s
-                ? 'border-black text-black'
+                ? 'border-black text-black font-medium'
                 : 'border-transparent text-luxury-midgray hover:text-black'
             }`}
           >
@@ -91,7 +95,7 @@ const AdminOrders = () => {
           <table className="w-full">
             <thead className="bg-luxury-offwhite border-b border-luxury-gray">
               <tr>
-                {['Order', 'Customer', 'Items', 'Amount', 'Date', 'Status', 'Update'].map(h => (
+                {['Order', 'Customer', 'Items', 'Amount', 'Date', 'Status', 'Update Status'].map(h => (
                   <th key={h} className="px-6 py-4 text-left text-xs tracking-widest uppercase text-luxury-midgray font-normal">
                     {h}
                   </th>
@@ -102,53 +106,50 @@ const AdminOrders = () => {
               {orders.map(order => (
                 <tr key={order.id} className="hover:bg-luxury-offwhite transition-colors">
 
-                  {/* Order */}
                   <td className="px-6 py-4">
-                    <p className="text-xs font-medium text-black tracking-wide">{order.order_number}</p>
+                    <p className="text-xs font-medium text-black tracking-wide">
+                      {order.order_number}
+                    </p>
                   </td>
 
-                  {/* Customer */}
                   <td className="px-6 py-4">
-                    <p className="text-xs font-medium text-black tracking-wide">{order.full_name}</p>
+                    <p className="text-xs font-medium text-black tracking-wide">
+                      {order.full_name}
+                    </p>
                     <p className="text-xs text-luxury-midgray tracking-wide">{order.city}</p>
                   </td>
 
-                  {/* Items */}
                   <td className="px-6 py-4 text-xs text-luxury-midgray tracking-widest">
                     {order.item_count}
                   </td>
 
-                  {/* Amount */}
                   <td className="px-6 py-4">
                     <p className="font-serif text-base text-black">
                       ₹{Number(order.grand_total).toLocaleString('en-IN')}
                     </p>
                   </td>
 
-                  {/* Date */}
                   <td className="px-6 py-4 text-xs text-luxury-midgray tracking-wide">
                     {new Date(order.created_at).toLocaleDateString('en-IN', {
                       day: 'numeric', month: 'short', year: 'numeric'
                     })}
                   </td>
 
-                  {/* Status */}
                   <td className="px-6 py-4">
                     <span className={`text-xs tracking-widest uppercase px-2 py-1 ${statusStyles[order.status]}`}>
                       {order.status}
                     </span>
                   </td>
 
-                  {/* Update */}
                   <td className="px-6 py-4">
                     <select
                       value={order.status}
                       onChange={(e) => handleStatusUpdate(order.order_number, e.target.value)}
                       disabled={updating === order.order_number}
-                      className="text-xs tracking-widest uppercase border border-luxury-gray px-2 py-1.5 focus:outline-none focus:border-black transition-all bg-white disabled:opacity-40 cursor-pointer"
+                      className="text-xs tracking-wide border border-luxury-gray px-3 py-2 focus:outline-none focus:border-black transition-all bg-white disabled:opacity-40 cursor-pointer rounded-none"
                     >
                       {statusOptions.map(s => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s} className="capitalize">{s}</option>
                       ))}
                     </select>
                   </td>
@@ -160,7 +161,9 @@ const AdminOrders = () => {
 
           {orders.length === 0 && (
             <div className="text-center py-16">
-              <p className="text-xs tracking-widest uppercase text-luxury-midgray">No orders found</p>
+              <p className="text-xs tracking-widest uppercase text-luxury-midgray">
+                No orders found
+              </p>
             </div>
           )}
         </div>

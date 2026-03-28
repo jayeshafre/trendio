@@ -26,8 +26,19 @@ const AdminSidebar = () => {
   }
 
   return (
-    <aside className="w-64 bg-black min-h-screen flex flex-col fixed top-0 left-0 z-40">
-
+    <div
+      style={{
+        width: '256px',
+        backgroundColor: '#000000',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        overflowY: 'auto',
+      }}
+    >
       {/* Logo */}
       <div className="px-8 py-6 border-b border-white/10">
         <Link to="/" className="font-serif text-xl font-bold tracking-widest text-white hover:text-gold transition-colors">
@@ -39,7 +50,7 @@ const AdminSidebar = () => {
       {/* Admin Info */}
       <div className="px-8 py-5 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gold flex items-center justify-center text-black font-bold text-xs font-serif">
+          <div className="w-8 h-8 bg-gold flex items-center justify-center text-black font-bold text-xs font-serif flex-shrink-0">
             {user?.first_name?.[0]?.toUpperCase() || 'A'}
           </div>
           <div>
@@ -87,8 +98,7 @@ const AdminSidebar = () => {
           <span>×</span> Sign Out
         </button>
       </div>
-
-    </aside>
+    </div>
   )
 }
 

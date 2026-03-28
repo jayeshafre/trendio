@@ -442,7 +442,7 @@ const HomePage = () => {
                   { label: 'My Account',  to: '/profile' },
                   { label: 'My Orders',   to: '/orders'  },
                   { label: 'Wishlist',    to: '/'        },
-                  { label: 'Sign In',     to: '/login'   },
+                 
                 ].map(item => (
                   <li key={item.label}>
                     <Link
